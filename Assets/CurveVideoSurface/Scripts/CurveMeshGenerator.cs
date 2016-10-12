@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 public class CurveMeshGenerator : MonoBehaviour {
 
@@ -13,8 +14,10 @@ public class CurveMeshGenerator : MonoBehaviour {
 	public float curve_ratio = 3f;
 
 	private List<Vector3> points = new List<Vector3> ();
+
 	private List<Vector3> vertices = new List<Vector3>();
 	private List<int> triangles = new List<int>();
+	private List<Vector2> uvs = new List<Vector2> ();
 //	private List<Vector3> normals = new List<Vector3>();
 
 	// Use this for initialization
@@ -23,8 +26,13 @@ public class CurveMeshGenerator : MonoBehaviour {
 		createMesh ();
 		mesh.vertices = vertices.ToArray();
 		mesh.triangles = triangles.ToArray();
+		mesh.uv = uvs.ToArray ();
+		mesh.RecalculateNormals ();
+		mesh.RecalculateBounds ();
+		mesh.Optimize ();
 //		mesh.normals = normals;
 		GetComponent<MeshFilter> ().mesh = mesh;
+		saveMesh (mesh, "Assets/CurveVideoSurface/Materials/curve.mat");
 	}
 	
 	// Update is called once per frame
@@ -52,8 +60,10 @@ public class CurveMeshGenerator : MonoBehaviour {
 	void AddTerrainPoint(Vector3 point) {
 		// Create a corresponding point along the bottom
 		vertices.Add(new Vector3(point.x, -height/2, point.z));
+		uvs.Add (new Vector3 (point.x/width+0.5f, 0, 0));
 		// Then add our top point
 		vertices.Add(new Vector3(point.x, height/2, point.z));
+		uvs.Add (new Vector3 (point.x/width+0.5f, 1, 0));
 		if (vertices.Count >= 4) {
 			// We have completed a new quad, create 2 triangles
 			int start = vertices.Count - 4;
@@ -83,5 +93,12 @@ public class CurveMeshGenerator : MonoBehaviour {
 		p += ttt * p3;
 
 		return p;
+	}
+
+	private void saveMesh(Mesh mesh,String path){
+		#if UNITY_EDITOR
+		UnityEditor.AssetDatabase.CreateAsset (mesh, path);
+		UnityEditor.AssetDatabase.SaveAssets ();
+		#endif
 	}
 }
